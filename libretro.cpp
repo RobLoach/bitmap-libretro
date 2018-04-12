@@ -122,11 +122,39 @@ static void draw(void)
    // Clear the screen.
    screen->clear(0);
 
+   // Display a Fractal.
+   double    cr,    ci;
+   double nextr, nexti;
+   double prevr, previ;
+   const unsigned int max_iterations = 50;
+   for (unsigned int y = 0; y < screen->height(); ++y) {
+      for (unsigned int x = 0; x < screen->width(); ++x) {
+         cr = 1.5 * (2.0 * x / screen->width () - 1.0) - 0.5;
+         ci =       (2.0 * y / screen->height() - 1.0);
+         nextr = nexti = 0;
+         prevr = previ = 0;
+         for (unsigned int i = 0; i < max_iterations; ++i) {
+            prevr = nextr;
+            previ = nexti;
+            nextr =     prevr * prevr - previ * previ + cr;
+            nexti = 2 * prevr * previ + ci;
+            if (((nextr * nextr) + (nexti * nexti)) > 4) {
+               using namespace std;
+               const double z = sqrt(nextr * nextr + nexti * nexti);
+               //https://en.wikipedia.org/wiki/Mandelbrot_set#Continuous_.28smooth.29_coloring
+               const unsigned int index = static_cast<unsigned int>
+                  (1000.0 * log2(1.75 + i - log2(log2(z))) / log2(max_iterations));
+               screen->set_pixel(x, y, jet_colormap[index]);
+               break;
+            }
+         }
+      }
+   }
+
    // Blit the image.
    for (unsigned y = 0; y < image->height(); y++) {
       for (unsigned x = 0; x < image->width(); x++) {
          colour = image->get_pixel(x, y);
-
          screen->set_pixel(x_coord + x, y_coord + y, colour);
       }
    }
