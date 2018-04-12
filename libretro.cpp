@@ -3,21 +3,35 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
+#include <iostream>
 #include <math.h>
 
 #include "libretro.h"
+#include "vendor/bitmap/bitmap_image.hpp"
 
 static uint32_t *frame_buf;
-
+static bitmap_image* image;
+static bitmap_image* screen;
+float x_coord = 0.0f;
+float y_coord = 0.0f;
 
 void retro_init(void)
 {
-   frame_buf = (uint32_t*) calloc(320 * 240, sizeof(uint32_t));
+   int width = 640;
+   int height = 480;
+   frame_buf = (uint32_t*) calloc(width * height, sizeof(uint32_t));
+
+   image = new bitmap_image("image.bmp");
+   screen = new bitmap_image(width, height);
+
+   screen->clear(0);
 }
 
 void retro_deinit(void)
 {
+   delete image;
    free(frame_buf);
+   delete screen;
    frame_buf = NULL;
 }
 
@@ -54,10 +68,10 @@ void retro_get_system_av_info(struct retro_system_av_info *info)
    };
 
    info->geometry = (struct retro_game_geometry) {
-      .base_width   = 320,
-      .base_height  = 240,
-      .max_width    = 320,
-      .max_height   = 240,
+      .base_width   = 640,
+      .base_height  = 480,
+      .max_width    = 640,
+      .max_height   = 480,
       .aspect_ratio = aspect,
    };
 }
@@ -68,7 +82,6 @@ void retro_set_environment(retro_environment_t cb)
 
    bool no_content = true;
    cb(RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME, &no_content);
-
 }
 
 void retro_set_audio_sample(retro_audio_sample_t cb)
@@ -101,59 +114,47 @@ void retro_reset(void)
 {
 }
 
-static void update_input(void)
+static void draw(void)
 {
-   //input_poll_cb();
-   //if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_UP))
-   //{
-      /* stub */
-   //}
-}
-
-static void render_checkered(void)
-{
-   unsigned y_coord, x_coord;
    uint32_t *buf    = frame_buf;
-   unsigned stride  = 320;
-   uint32_t color_r = 0xff << 16;
-   uint32_t color_g = 0xff <<  8;
-   uint32_t *line   = buf;
+   bitmap_image::rgb_t colour;
 
-   for (unsigned y = 0; y < 240; y++, line += stride)
-   {
-      unsigned index_y = ((y - y_coord) >> 4) & 1;
-      for (unsigned x = 0; x < 320; x++)
-      {
-         unsigned index_x = ((x - x_coord) >> 4) & 1;
-         line[x] = (index_y ^ index_x) ? color_r : color_g;
+   // Clear the screen.
+   screen->clear(0);
+
+   // Blit the image.
+   for (unsigned y = 0; y < image->height(); y++) {
+      for (unsigned x = 0; x < image->width(); x++) {
+         colour = image->get_pixel(x, y);
+
+         screen->set_pixel(x_coord + x, y_coord + y, colour);
       }
    }
 
-   /*for (unsigned y = mouse_rel_y - 5; y <= mouse_rel_y + 5; y++)
-      for (unsigned x = mouse_rel_x - 5; x <= mouse_rel_x + 5; x++)
-         buf[y * stride + x] = 0xff;*/
-
-   for (unsigned y = 0; y < 240; y++) {
-      for (unsigned x = 0; x < 320; x++) {
-         buf[y * 320 + x] = 0xff;
+   // Flip the sreen.
+   for (unsigned y = 0; y < screen->height(); y++) {
+      for (unsigned x = 0; x < screen->width(); x++) {
+         colour = screen->get_pixel(x, y);
+         buf[y * screen->width() + x] = (uint32_t)((255 << 24) |
+            (colour.red << 16) |
+            (colour.green << 8) |
+            (colour.blue << 0));
       }
    }
 
-   video_cb(buf, 320, 240, stride << 2);
+   // Display the screen.
+   video_cb(buf, screen->width(), screen->height(), screen->width() << 2);
 }
 
 static void check_variables(void)
 {
 }
 
-static void audio_callback(void)
-{
-   //audio_cb(0, 0);
-}
-
 void retro_run(void)
 {
-   render_checkered();
+   x_coord += 0.5f;
+   y_coord += 0.2f;
+   draw();
 
    bool updated = false;
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE, &updated) && updated)
