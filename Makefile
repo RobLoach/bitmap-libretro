@@ -120,7 +120,10 @@ OBJECTS := $(SOURCES_C:.c=.o) $(SOURCES_CXX:.cpp=.o)
 CFLAGS   += -Wall -D__LIBRETRO__ $(fpic)
 CXXFLAGS += -Wall -D__LIBRETRO__ $(fpic)
 
-all: $(TARGET)
+all: $(TARGET) vendor/bitmap/bitmap_image.hpp
+
+vendor/bitmap/bitmap_image.hpp:
+   git submodule update --init
 
 $(TARGET): $(OBJECTS)
 ifeq ($(STATIC_LINKING), 1)
