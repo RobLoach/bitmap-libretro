@@ -4,13 +4,13 @@ AR             := ar
 ifeq ($(platform),)
 platform = unix
 ifeq ($(shell uname -a),)
-   platform = win
+	platform = win
 else ifneq ($(findstring MINGW,$(shell uname -a)),)
-   platform = win
+	platform = win
 else ifneq ($(findstring Darwin,$(shell uname -a)),)
-   platform = osx
+	platform = osx
 else ifneq ($(findstring win,$(shell uname -a)),)
-   platform = win
+	platform = win
 endif
 endif
 
@@ -36,16 +36,16 @@ LIBM		    = -lm
 
 ifeq ($(ARCHFLAGS),)
 ifeq ($(archs),ppc)
-   ARCHFLAGS = -arch ppc -arch ppc64
+	ARCHFLAGS = -arch ppc -arch ppc64
 else
-   ARCHFLAGS = -arch i386 -arch x86_64
+	ARCHFLAGS = -arch i386 -arch x86_64
 endif
 endif
 
 ifeq ($(platform), osx)
 ifndef ($(NOUNIVERSAL))
-   CXXFLAGS += $(ARCHFLAGS)
-   LFLAGS += $(ARCHFLAGS)
+	CXXFLAGS += $(ARCHFLAGS)
+	LFLAGS += $(ARCHFLAGS)
 endif
 endif
 
@@ -55,25 +55,25 @@ endif
 
 ifeq ($(platform), unix)
 	EXT ?= so
-   TARGET := $(TARGET_NAME)_libretro.$(EXT)
-   fpic := -fPIC
-   SHARED := -shared -Wl,--version-script=$(CORE_DIR)/link.T -Wl,--no-undefined
+	TARGET := $(TARGET_NAME)_libretro.$(EXT)
+	fpic := -fPIC
+	SHARED := -shared -Wl,--version-script=$(CORE_DIR)/link.T -Wl,--no-undefined
 else ifeq ($(platform), linux-portable)
-   TARGET := $(TARGET_NAME)_libretro.$(EXT)
-   fpic := -fPIC -nostdlib
-   SHARED := -shared -Wl,--version-script=$(CORE_DIR)/link.T
+	TARGET := $(TARGET_NAME)_libretro.$(EXT)
+	fpic := -fPIC -nostdlib
+	SHARED := -shared -Wl,--version-script=$(CORE_DIR)/link.T
 	LIBM :=
 else ifneq (,$(findstring osx,$(platform)))
-   TARGET := $(TARGET_NAME)_libretro.dylib
-   fpic := -fPIC
-   SHARED := -dynamiclib
+	TARGET := $(TARGET_NAME)_libretro.dylib
+	fpic := -fPIC
+	SHARED := -dynamiclib
 else ifneq (,$(findstring ios,$(platform)))
-   TARGET := $(TARGET_NAME)_libretro_ios.dylib
+	TARGET := $(TARGET_NAME)_libretro_ios.dylib
 	fpic := -fPIC
 	SHARED := -dynamiclib
 
 ifeq ($(IOSSDK),)
-   IOSSDK := $(shell xcodebuild -version -sdk iphoneos Path)
+	IOSSDK := $(shell xcodebuild -version -sdk iphoneos Path)
 endif
 
 	DEFINES := -DIOS
@@ -87,30 +87,30 @@ CXXFLAGS += -miphoneos-version-min=5.0
 endif
 else ifneq (,$(findstring qnx,$(platform)))
 	TARGET := $(TARGET_NAME)_libretro_qnx.so
-   fpic := -fPIC
-   SHARED := -shared -Wl,--version-script=$(CORE_DIR)/link.T -Wl,--no-undefined
+	fpic := -fPIC
+	SHARED := -shared -Wl,--version-script=$(CORE_DIR)/link.T -Wl,--no-undefined
 else ifeq ($(platform), emscripten)
-   TARGET := $(TARGET_NAME)_libretro_emscripten.bc
-   fpic := -fPIC
-   SHARED := -shared -Wl,--version-script=$(CORE_DIR)/link.T -Wl,--no-undefined
+	TARGET := $(TARGET_NAME)_libretro_emscripten.bc
+	fpic := -fPIC
+	SHARED := -shared -Wl,--version-script=$(CORE_DIR)/link.T -Wl,--no-undefined
 else ifeq ($(platform), vita)
-   TARGET := $(TARGET_NAME)_vita.a
-   CC = arm-vita-eabi-gcc
-   AR = arm-vita-eabi-ar
-   CXXFLAGS += -Wl,-q -Wall -O3
+	TARGET := $(TARGET_NAME)_vita.a
+	CC = arm-vita-eabi-gcc
+	AR = arm-vita-eabi-ar
+	CXXFLAGS += -Wl,-q -Wall -O3
 	STATIC_LINKING = 1
 else
-   CC = gcc
-   TARGET := $(TARGET_NAME)_libretro.dll
-   SHARED := -shared -static-libgcc -static-libstdc++ -s -Wl,--version-script=$(CORE_DIR)/link.T -Wl,--no-undefined
+	CC = gcc
+	TARGET := $(TARGET_NAME)_libretro.dll
+	SHARED := -shared -static-libgcc -static-libstdc++ -s -Wl,--version-script=$(CORE_DIR)/link.T -Wl,--no-undefined
 endif
 
 LDFLAGS += $(LIBM)
 
 ifeq ($(DEBUG), 1)
-   CXXFLAGS += -O0 -g
+	CXXFLAGS += -O0 -g
 else
-   CXXFLAGS += -O3
+	CXXFLAGS += -O3
 endif
 
 include Makefile.common
@@ -120,10 +120,7 @@ OBJECTS := $(SOURCES_C:.c=.o) $(SOURCES_CXX:.cpp=.o)
 CFLAGS   += -Wall -D__LIBRETRO__ $(fpic)
 CXXFLAGS += -Wall -D__LIBRETRO__ $(fpic)
 
-all: $(TARGET) vendor/bitmap/bitmap_image.hpp
-
-vendor/bitmap/bitmap_image.hpp:
-   git submodule update --init
+all: vendor/bitmap/bitmap_image.hpp $(TARGET)
 
 $(TARGET): $(OBJECTS)
 ifeq ($(STATIC_LINKING), 1)
@@ -131,6 +128,9 @@ ifeq ($(STATIC_LINKING), 1)
 else
 	$(CXX) $(fpic) $(SHARED) $(INCLUDES) -o $@ $(OBJECTS) $(LDFLAGS)
 endif
+
+vendor/bitmap/bitmap_image.hpp:
+	git submodule update --init
 
 %.o: %.c
 	$(CXX) $(CXXFLAGS) $(fpic) -c -o $@ $<
